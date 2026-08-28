@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { 
   Search, ShieldAlert, CheckCircle, XCircle, RefreshCw, LogOut, 
   FileSpreadsheet, Eye, Lock, ToggleLeft, ToggleRight, LayoutDashboard, 
-  Users, Settings, Filter, X
+  Users, Filter, X, Menu
 } from 'lucide-react';
 
 export default function App() {
@@ -15,15 +15,16 @@ export default function App() {
   const [isRegOpen, setIsRegOpen] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  // Filters & Search
+  // Mobile Menu & Modals State
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeGrade, setActiveGrade] = useState(9);
   const [activeStream, setActiveStream] = useState('ALL');
-  const [selectedStudent, setSelectedStudent] = useState(null); // Modal detail
-  const [rejectingStudent, setRejectingStudent] = useState(null); // Reject modal
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [rejectingStudent, setRejectingStudent] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const ADMIN_PASSWORD = '1234'; // Change your password here
+  const ADMIN_PASSWORD = '1234';
 
   useEffect(() => {
     const savedAuth = localStorage.getItem('admin_auth');
@@ -103,7 +104,6 @@ export default function App() {
     }
   }
 
-  // Export to CSV Function
   const exportToCSV = () => {
     const headers = ["Full Name", "Faida ID", "Grade", "Stream", "Mother Phone", "Status", "Created At"];
     const rows = filteredStudents.map(s => [
@@ -126,7 +126,6 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // Filter Logic
   const filteredStudents = students.filter(student => {
     const matchesGrade = Number(student.grade_level) === Number(activeGrade);
     const matchesStream = (activeGrade < 11 || activeStream === 'ALL') 
@@ -163,13 +162,13 @@ export default function App() {
                 placeholder="Access Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 focus:outline-none focus:border-blue-500 transition"
               />
             </div>
             {loginError && <p className="text-red-400 text-xs font-semibold">{loginError}</p>}
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-blue-600/20"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition duration-200"
             >
               Sign In
             </button>
@@ -180,9 +179,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 p-5 flex flex-col justify-between hidden md:flex">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row">
+      {/* Desktop Sidebar */}
+      <aside className="w-64 bg-slate-900 border-r border-slate-800 p-5 flex-col justify-between hidden md:flex min-h-screen">
         <div>
           <div className="flex items-center gap-3 mb-8 px-2">
             <div className="p-2 bg-blue-600 rounded-lg">
@@ -211,34 +210,84 @@ export default function App() {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Mobile Sidebar Overlay Drawer */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm md:hidden flex">
+          <div className="w-72 bg-slate-900 h-full p-5 flex flex-col justify-between border-r border-slate-800">
+            <div>
+              <div className="flex items-center justify-between mb-8 px-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-600 rounded-lg">
+                    <LayoutDashboard className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-base leading-tight">School Admin</h2>
+                    <span className="text-xs text-slate-400">Portal v2.0</span>
+                  </div>
+                </div>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 text-slate-400">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <nav className="space-y-2">
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-600/10 text-blue-400 border border-blue-500/20 font-medium text-sm"
+                >
+                  <Users className="w-4 h-4" /> Applications
+                </button>
+              </nav>
+            </div>
+
+            <div className="border-t border-slate-800 pt-4">
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition text-sm font-medium"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
+          </div>
+          <div className="flex-1" onClick={() => setIsMobileMenuOpen(false)} />
+        </div>
+      )}
+
+      {/* Main Workspace Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Navbar */}
-        <header className="h-16 bg-slate-900/80 backdrop-blur border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-4 flex-1 max-w-md">
+        {/* Navbar with Hamburger Button for Mobile */}
+        <header className="h-16 bg-slate-900/80 backdrop-blur border-b border-slate-800 px-4 md:px-6 flex items-center justify-between sticky top-0 z-10 gap-2">
+          <div className="flex items-center gap-2 flex-1 max-w-md">
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden p-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-300"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
             <div className="relative w-full">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search by name, Faida ID, or phone..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm bg-slate-800/80 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                className="w-full pl-9 pr-3 py-2 text-xs md:text-sm bg-slate-800/80 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <button
               onClick={toggleRegistration}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] md:text-xs font-semibold border transition ${
                 isRegOpen 
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
                   : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
               }`}
             >
               {isRegOpen ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-              Registration: {isRegOpen ? 'OPEN' : 'CLOSED'}
+              <span className="hidden sm:inline">Registration:</span> {isRegOpen ? 'OPEN' : 'CLOSED'}
             </button>
 
             <button 
@@ -252,8 +301,7 @@ export default function App() {
         </header>
 
         {/* Dashboard Workspace */}
-        <main className="p-6 space-y-6 flex-1 overflow-y-auto">
-          {/* Header Title & Actions */}
+        <main className="p-4 md:p-6 space-y-6 flex-1 overflow-y-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-xl font-bold tracking-tight">Student Applications</h1>
@@ -262,13 +310,13 @@ export default function App() {
 
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-medium transition"
+              className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-medium transition w-full md:w-auto"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Export CSV
             </button>
           </div>
 
-          {/* Grade Selector Tabs */}
+          {/* Grade Tabs */}
           <div className="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
             {[9, 10, 11, 12].map((grade) => {
               const pendingCount = getPendingCount(grade);
@@ -276,10 +324,10 @@ export default function App() {
                 <button
                   key={grade}
                   onClick={() => { setActiveGrade(grade); setActiveStream('ALL'); }}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition ${
                     activeGrade === grade 
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Grade {grade}
@@ -293,16 +341,16 @@ export default function App() {
             })}
           </div>
 
-          {/* Stream Filter for Grade 11 and 12 */}
+          {/* Stream Filter */}
           {activeGrade >= 11 && (
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-2 rounded-xl w-fit">
+            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-2 rounded-xl w-full sm:w-fit overflow-x-auto">
               <Filter className="w-4 h-4 text-slate-400 ml-2" />
               <span className="text-xs text-slate-400 mr-2">Stream:</span>
               {['ALL', 'Natural Science', 'Social Science'].map((stream) => (
                 <button
                   key={stream}
                   onClick={() => setActiveStream(stream)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
+                  className={`px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition ${
                     activeStream === stream
                       ? 'bg-slate-800 text-blue-400 border border-blue-500/30'
                       : 'text-slate-400 hover:text-slate-200'
@@ -314,7 +362,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Applications Data Table */}
+          {/* Table */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             {loading ? (
               <div className="p-12 text-center text-slate-500 text-sm">Loading applications...</div>
@@ -343,7 +391,7 @@ export default function App() {
                         </td>
                         <td className="p-4 font-mono text-slate-400">{st.mother_phone}</td>
                         <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${
                             st.status === 'approved' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
                             st.status === 'rejected' ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
                             'bg-amber-500/10 border-amber-500/30 text-amber-400'
@@ -362,13 +410,13 @@ export default function App() {
                             </button>
                             <button
                               onClick={() => updateStatus(st.id, 'approved')}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold flex items-center gap-1 transition"
+                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold flex items-center gap-1 transition text-[11px]"
                             >
                               <CheckCircle className="w-3 h-3" /> Approve
                             </button>
                             <button
                               onClick={() => setRejectingStudent(st)}
-                              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-semibold flex items-center gap-1 transition"
+                              className="px-2 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-semibold flex items-center gap-1 transition text-[11px]"
                             >
                               <XCircle className="w-3 h-3" /> Reject
                             </button>
@@ -384,7 +432,7 @@ export default function App() {
         </main>
       </div>
 
-      {/* Student Details & Documents Modal */}
+      {/* Document View Modal */}
       {selectedStudent && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto">
@@ -398,9 +446,7 @@ export default function App() {
               </button>
             </div>
 
-            {/* Document Images Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Faida Photo */}
               <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-center space-y-2">
                 <p className="text-xs font-semibold text-slate-400">Faida ID Card</p>
                 {selectedStudent.faida_photo_url ? (
@@ -410,7 +456,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* School Report Card */}
               <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-center space-y-2">
                 <p className="text-xs font-semibold text-slate-400">Report Card</p>
                 {selectedStudent.card_photo_url ? (
@@ -420,7 +465,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Payment Receipt */}
               <div className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-center space-y-2">
                 <p className="text-xs font-semibold text-slate-400">Payment Receipt</p>
                 {selectedStudent.receipt_photo_url ? (
@@ -431,7 +475,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Modal Actions */}
             <div className="flex justify-end gap-3 border-t border-slate-800 pt-4">
               <button
                 onClick={() => updateStatus(selectedStudent.id, 'rejected')}
